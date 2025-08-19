@@ -1,16 +1,17 @@
 package com.sopromadze.blogapi.payload;
 
 import lombok.Data;
+import org.bson.types.ObjectId;
 
 @Data
 public class PhotoResponse {
-	private Long id;
+	private String id;
 	private String title;
 	private String url;
 	private String thumbnailUrl;
-	private Long albumId;
+	private String albumId;
 
-	public PhotoResponse(Long id, String title, String url, String thumbnailUrl, Long albumId) {
+	public PhotoResponse(String id, String title, String url, String thumbnailUrl, String albumId) {
 		this.id = id;
 		this.title = title;
 		this.url = url;

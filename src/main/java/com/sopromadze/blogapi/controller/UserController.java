@@ -15,6 +15,9 @@ import com.sopromadze.blogapi.service.AlbumService;
 import com.sopromadze.blogapi.service.PostService;
 import com.sopromadze.blogapi.service.UserService;
 import com.sopromadze.blogapi.utils.AppConstants;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,22 +32,27 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
 
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "User management", description = "Operations related to user management")
 public class UserController {
-	@Autowired
-	private UserService userService;
+	private final UserService userService;
+	private final PostService postService;
+	private final AlbumService albumService;
 
-	@Autowired
-	private PostService postService;
-
-	@Autowired
-	private AlbumService albumService;
+	public UserController(UserService userService, PostService postService, AlbumService albumService) {
+		this.userService = userService;
+		this.postService = postService;
+		this.albumService = albumService;
+	}
 
 	@GetMapping("/me")
 	@PreAuthorize("hasRole('USER')")
+	@Operation(
+			summary = "Get authenticated user",
+			description = "Returns currently authenticated user"
+	)
 	public ResponseEntity<UserSummary> getCurrentUser(@CurrentUser UserPrincipal currentUser) {
 		UserSummary userSummary = userService.getCurrentUser(currentUser);
 

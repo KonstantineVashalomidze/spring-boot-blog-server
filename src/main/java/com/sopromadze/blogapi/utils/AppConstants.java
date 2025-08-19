@@ -27,5 +27,11 @@ public class AppConstants {
 
 	public static final String TODO = "ToDo";
 
+	public static final String ADDRESS = "Address";
+
+	public static final String COMPANY = "Company";
+
+	public static final String USER_ROLE_NOT_SET = "User role not set";
+
 	public static final String YOU_DON_T_HAVE_PERMISSION_TO_MAKE_THIS_OPERATION = "You don't have permission to make this operation";
 }

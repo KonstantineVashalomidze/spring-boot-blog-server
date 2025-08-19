@@ -1,6 +1,5 @@
 package com.sopromadze.blogapi.service.impl;
 
-import com.sopromadze.blogapi.exception.BadRequestException;
 import com.sopromadze.blogapi.exception.ResourceNotFoundException;
 import com.sopromadze.blogapi.exception.UnauthorizedException;
 import com.sopromadze.blogapi.model.Category;
@@ -20,6 +19,7 @@ import com.sopromadze.blogapi.security.UserPrincipal;
 import com.sopromadze.blogapi.service.PostService;
 import com.sopromadze.blogapi.utils.AppConstants;
 import com.sopromadze.blogapi.utils.AppUtils;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.sopromadze.blogapi.utils.AppConstants.CATEGORY;
 import static com.sopromadze.blogapi.utils.AppConstants.CREATED_AT;
@@ -41,21 +42,21 @@ import static com.sopromadze.blogapi.utils.AppConstants.USER;
 
 @Service
 public class PostServiceImpl implements PostService {
-	@Autowired
-	private PostRepository postRepository;
+	private final PostRepository postRepository;
+	private final UserRepository userRepository;
+	private final CategoryRepository categoryRepository;
+	private final TagRepository tagRepository;
 
-	@Autowired
-	private UserRepository userRepository;
-
-	@Autowired
-	private CategoryRepository categoryRepository;
-
-	@Autowired
-	private TagRepository tagRepository;
+	public PostServiceImpl(PostRepository postRepository, UserRepository userRepository, CategoryRepository categoryRepository, TagRepository tagRepository) {
+		this.postRepository = postRepository;
+		this.userRepository = userRepository;
+		this.categoryRepository = categoryRepository;
+		this.tagRepository = tagRepository;
+	}
 
 	@Override
 	public PagedResponse<Post> getAllPosts(int page, int size) {
-		validatePageNumberAndSize(page, size);
+		AppUtils.validatePageNumberAndSize(page, size);
 
 		Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, CREATED_AT);
 
@@ -69,7 +70,7 @@ public class PostServiceImpl implements PostService {
 
 	@Override
 	public PagedResponse<Post> getPostsByCreatedBy(String username, int page, int size) {
-		validatePageNumberAndSize(page, size);
+		AppUtils.validatePageNumberAndSize(page, size);
 		User user = userRepository.getUserByName(username);
 		Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, CREATED_AT);
 		Page<Post> posts = postRepository.findByCreatedBy(user.getId(), pageable);
@@ -81,7 +82,7 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public PagedResponse<Post> getPostsByCategory(Long id, int page, int size) {
+	public PagedResponse<Post> getPostsByCategory(ObjectId id, int page, int size) {
 		AppUtils.validatePageNumberAndSize(page, size);
 		Category category = categoryRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException(CATEGORY, ID, id));
@@ -96,7 +97,7 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public PagedResponse<Post> getPostsByTag(Long id, int page, int size) {
+	public PagedResponse<Post> getPostsByTag(ObjectId id, int page, int size) {
 		AppUtils.validatePageNumberAndSize(page, size);
 
 		Tag tag = tagRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(TAG, ID, id));
@@ -112,15 +113,15 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public Post updatePost(Long id, PostRequest newPostRequest, UserPrincipal currentUser) {
+	public Post updatePost(ObjectId id, PostRequest newPostRequest, UserPrincipal currentUser) {
 		Post post = postRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(POST, ID, id));
-		Category category = categoryRepository.findById(newPostRequest.getCategoryId())
+		Category category = categoryRepository.findById(new ObjectId(newPostRequest.getCategoryId()))
 				.orElseThrow(() -> new ResourceNotFoundException(CATEGORY, ID, newPostRequest.getCategoryId()));
-		if (post.getUser().getId().equals(currentUser.getId())
+		if (post.getUser().equals(currentUser.getId())
 				|| currentUser.getAuthorities().contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {
 			post.setTitle(newPostRequest.getTitle());
 			post.setBody(newPostRequest.getBody());
-			post.setCategory(category);
+			post.setCategory(category.getId());
 			return postRepository.save(post);
 		}
 		ApiResponse apiResponse = new ApiResponse(Boolean.FALSE, "You don't have permission to edit this post");
@@ -129,9 +130,9 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public ApiResponse deletePost(Long id, UserPrincipal currentUser) {
+	public ApiResponse deletePost(ObjectId id, UserPrincipal currentUser) {
 		Post post = postRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(POST, ID, id));
-		if (post.getUser().getId().equals(currentUser.getId())
+		if (post.getUser().equals(currentUser.getId())
 				|| currentUser.getAuthorities().contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {
 			postRepository.deleteById(id);
 			return new ApiResponse(Boolean.TRUE, "You successfully deleted post");
@@ -146,7 +147,7 @@ public class PostServiceImpl implements PostService {
 	public PostResponse addPost(PostRequest postRequest, UserPrincipal currentUser) {
 		User user = userRepository.findById(currentUser.getId())
 				.orElseThrow(() -> new ResourceNotFoundException(USER, ID, 1L));
-		Category category = categoryRepository.findById(postRequest.getCategoryId())
+		Category category = categoryRepository.findById(new ObjectId(postRequest.getCategoryId()))
 				.orElseThrow(() -> new ResourceNotFoundException(CATEGORY, ID, postRequest.getCategoryId()));
 
 		List<Tag> tags = new ArrayList<>(postRequest.getTags().size());
@@ -161,9 +162,9 @@ public class PostServiceImpl implements PostService {
 		Post post = new Post();
 		post.setBody(postRequest.getBody());
 		post.setTitle(postRequest.getTitle());
-		post.setCategory(category);
-		post.setUser(user);
-		post.setTags(tags);
+		post.setCategory(category.getId());
+		post.setUser(user.getId());
+		post.setTags(tags.stream().map(Tag::getId).collect(Collectors.toList()));
 
 		Post newPost = postRepository.save(post);
 
@@ -171,13 +172,9 @@ public class PostServiceImpl implements PostService {
 
 		postResponse.setTitle(newPost.getTitle());
 		postResponse.setBody(newPost.getBody());
-		postResponse.setCategory(newPost.getCategory().getName());
+		postResponse.setCategory(category.getName());
 
-		List<String> tagNames = new ArrayList<>(newPost.getTags().size());
-
-		for (Tag tag : newPost.getTags()) {
-			tagNames.add(tag.getName());
-		}
+		List<String> tagNames = tags.stream().map(Tag::getName).collect(Collectors.toList());
 
 		postResponse.setTags(tagNames);
 
@@ -185,21 +182,8 @@ public class PostServiceImpl implements PostService {
 	}
 
 	@Override
-	public Post getPost(Long id) {
+	public Post getPost(ObjectId id) {
 		return postRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(POST, ID, id));
 	}
 
-	private void validatePageNumberAndSize(int page, int size) {
-		if (page < 0) {
-			throw new BadRequestException("Page number cannot be less than zero.");
-		}
-
-		if (size < 0) {
-			throw new BadRequestException("Size number cannot be less than zero.");
-		}
-
-		if (size > AppConstants.MAX_PAGE_SIZE) {
-			throw new BadRequestException("Page size must not be greater than " + AppConstants.MAX_PAGE_SIZE);
-		}
-	}
 }

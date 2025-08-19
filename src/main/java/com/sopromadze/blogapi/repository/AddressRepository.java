@@ -1,11 +1,11 @@
 package com.sopromadze.blogapi.repository;
 
-import com.sopromadze.blogapi.model.Tag;
+import com.sopromadze.blogapi.model.user.Address;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface TagRepository extends MongoRepository<Tag, ObjectId> {
-	Tag findByName(String name);
+public interface AddressRepository extends MongoRepository<Address, ObjectId> {
+
 }

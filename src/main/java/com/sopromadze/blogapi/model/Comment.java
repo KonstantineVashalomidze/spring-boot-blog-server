@@ -1,72 +1,112 @@
 package com.sopromadze.blogapi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.sopromadze.blogapi.model.audit.UserDateAudit;
 import com.sopromadze.blogapi.model.user.User;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.*;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
+import java.time.Instant;
 
-@EqualsAndHashCode(callSuper = true)
-@Entity
+@EqualsAndHashCode
 @Data
 @NoArgsConstructor
-@Table(name = "comments")
-public class Comment extends UserDateAudit {
-    private static final long serialVersionUID = 1L;
-
+@Document("comments")
+public class Comment {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private ObjectId id;
 
-    @Column(name = "name")
     @NotBlank
     @Size(min = 4, max = 50)
     private String name;
 
-    @Column(name = "email")
+    @CreatedDate
+    private Instant createdAt;
+    @LastModifiedDate
+    private Instant updatedAt;
+
+    @CreatedBy
+    private ObjectId createdBy;
+
+    @LastModifiedBy
+    private ObjectId updatedBy;
+
     @NotBlank
     @Email
     @Size(min = 4, max = 50)
     private String email;
 
-    @Column(name = "body")
     @NotBlank
-    @Size(min = 10, message = "Comment body must be minimum 10 characters")
+    @Size(min = 10)
     private String body;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id")
-    private Post post;
+    private ObjectId post;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
+    private ObjectId user;
 
-    public Comment(@NotBlank @Size(min = 10, message = "Comment body must be minimum 10 characters") String body) {
+    public Comment(@NotBlank @Size(min = 10) String body) {
         this.body = body;
     }
 
     @JsonIgnore
-    public Post getPost() {
+    public ObjectId getPost() {
         return post;
     }
 
     @JsonIgnore
-    public User getUser() {
+    public ObjectId getUser() {
         return user;
+    }
+
+    @JsonIgnore
+    public ObjectId getId() {
+        return id;
+    }
+
+
+    @JsonIgnore
+    public ObjectId getCreatedBy() {
+        return createdBy;
+    }
+
+    @JsonIgnore
+    public void setCreatedBy(ObjectId createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    @JsonIgnore
+    public ObjectId getUpdatedBy() {
+        return updatedBy;
+    }
+
+    @JsonIgnore
+    public void setUpdatedBy(ObjectId updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    @JsonIgnore
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    @JsonIgnore
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @JsonIgnore
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    @JsonIgnore
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

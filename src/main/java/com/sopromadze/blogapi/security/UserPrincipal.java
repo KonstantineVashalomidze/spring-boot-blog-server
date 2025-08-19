@@ -2,6 +2,9 @@ package com.sopromadze.blogapi.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sopromadze.blogapi.model.user.User;
+import lombok.Getter;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,18 +15,22 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+
 public class UserPrincipal implements UserDetails {
-	private static final long serialVersionUID = 1L;
+	@Getter
+    @Id
+	private ObjectId Id;
 
-	private Long id;
+	@Getter
+    private String firstName;
 
-	private String firstName;
-
-	private String lastName;
+	@Getter
+    private String lastName;
 
 	private String username;
 
-	@JsonIgnore
+	@Getter
+    @JsonIgnore
 	private String email;
 
 	@JsonIgnore
@@ -31,9 +38,9 @@ public class UserPrincipal implements UserDetails {
 
 	private Collection<? extends GrantedAuthority> authorities;
 
-	public UserPrincipal(Long id, String firstName, String lastName, String username, String email, String password,
+	public UserPrincipal(ObjectId Id, String firstName, String lastName, String username, String email, String password,
 			Collection<? extends GrantedAuthority> authorities) {
-		this.id = id;
+		this.Id = Id;
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.username = username;
@@ -48,6 +55,8 @@ public class UserPrincipal implements UserDetails {
 	}
 
 	public static UserPrincipal create(User user) {
+
+
 		List<GrantedAuthority> authorities = user.getRoles().stream()
 				.map(role -> new SimpleGrantedAuthority(role.getName().name())).collect(Collectors.toList());
 
@@ -55,15 +64,7 @@ public class UserPrincipal implements UserDetails {
 				user.getEmail(), user.getPassword(), authorities);
 	}
 
-	public Long getId() {
-		return id;
-	}
-
-	public String getEmail() {
-		return email;
-	}
-
-	@Override
+    @Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		return authorities == null ? null : new ArrayList<>(authorities);
 	}
@@ -104,18 +105,11 @@ public class UserPrincipal implements UserDetails {
 		if (object == null || getClass() != object.getClass())
 			return false;
 		UserPrincipal that = (UserPrincipal) object;
-		return Objects.equals(id, that.id);
+		return Objects.equals(Id, that.Id);
 	}
 
 	public int hashCode() {
-		return Objects.hash(id);
+		return Objects.hash(Id);
 	}
 
-	public String getFirstName() {
-		return firstName;
-	}
-
-	public String getLastName() {
-		return lastName;
-	}
 }

@@ -1,63 +1,93 @@
 package com.sopromadze.blogapi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.sopromadze.blogapi.model.audit.UserDateAudit;
-import com.sopromadze.blogapi.model.Post;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.*;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.Table;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
-@Entity
+@EqualsAndHashCode
 @Data
 @NoArgsConstructor
-@Table(name = "tags")
-//@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-public class Tag extends UserDateAudit {
+@Document("tags")
+public class Tag {
 
-	private static final long serialVersionUID = -5298707266367331514L;
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	private ObjectId id;
 
-	@Column(name = "name")
 	private String name;
 
+	@CreatedDate
+	private Instant createdAt;
+	@LastModifiedDate
+	private Instant updatedAt;
+
+	@CreatedBy
+	private ObjectId createdBy;
+
+	@LastModifiedBy
+	private ObjectId updatedBy;
+
 	@JsonIgnore
-	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "post_tag", joinColumns = @JoinColumn(name = "tag_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "post_id", referencedColumnName = "id"))
-	private List<Post> posts;
+	private List<ObjectId> posts;
 
 	public Tag(String name) {
 		super();
 		this.name = name;
 	}
 
-	public List<Post> getPosts() {
-		return posts == null ? null : new ArrayList<>(posts);
+	@JsonIgnore
+	public ObjectId getId() {
+		return id;
 	}
 
-	public void setPosts(List<Post> posts) {
-		if (posts == null) {
-			this.posts = null;
-		} else {
-			this.posts = Collections.unmodifiableList(posts);
-		}
+
+	@JsonIgnore
+	public ObjectId getCreatedBy() {
+		return createdBy;
+	}
+
+	@JsonIgnore
+	public void setCreatedBy(ObjectId createdBy) {
+		this.createdBy = createdBy;
+	}
+
+	@JsonIgnore
+	public ObjectId getUpdatedBy() {
+		return updatedBy;
+	}
+
+	@JsonIgnore
+	public void setUpdatedBy(ObjectId updatedBy) {
+		this.updatedBy = updatedBy;
+	}
+
+	@JsonIgnore
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	@JsonIgnore
+	public void setCreatedAt(Instant createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	@JsonIgnore
+	public Instant getUpdatedAt() {
+		return updatedAt;
+	}
+
+	@JsonIgnore
+	public void setUpdatedAt(Instant updatedAt) {
+		this.updatedAt = updatedAt;
 	}
 
 }

@@ -1,48 +1,88 @@
 package com.sopromadze.blogapi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.sopromadze.blogapi.model.audit.UserDateAudit;
-import com.sopromadze.blogapi.model.user.User;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.*;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-import javax.validation.constraints.NotBlank;
+import java.time.Instant;
 
-@EqualsAndHashCode(callSuper = true)
-@Entity
+@EqualsAndHashCode
 @Data
-@Table(name = "todos", uniqueConstraints = { @UniqueConstraint(columnNames = { "title" }) })
-public class Todo extends UserDateAudit {
-
-	private static final long serialVersionUID = 1L;
-
+@Document("todos")
+public class Todo {
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	private ObjectId id;
 
 	@NotBlank
-	@Column(name = "title")
 	private String title;
 
-	@Column(name = "completed")
 	private Boolean completed;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "user_id")
-	private User user;
+	private ObjectId user;
+
+	@CreatedDate
+	private Instant createdAt;
+	@LastModifiedDate
+	private Instant updatedAt;
+
+	@CreatedBy
+	private ObjectId createdBy;
+
+	@LastModifiedBy
+	private ObjectId updatedBy;
 
 	@JsonIgnore
-	public User getUser() {
+	public ObjectId getUser() {
 		return user;
+	}
+
+	@JsonIgnore
+	public ObjectId getId() {
+		return id;
+	}
+
+
+	@JsonIgnore
+	public ObjectId getCreatedBy() {
+		return createdBy;
+	}
+
+	@JsonIgnore
+	public void setCreatedBy(ObjectId createdBy) {
+		this.createdBy = createdBy;
+	}
+
+	@JsonIgnore
+	public ObjectId getUpdatedBy() {
+		return updatedBy;
+	}
+
+	@JsonIgnore
+	public void setUpdatedBy(ObjectId updatedBy) {
+		this.updatedBy = updatedBy;
+	}
+
+	@JsonIgnore
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	@JsonIgnore
+	public void setCreatedAt(Instant createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	@JsonIgnore
+	public Instant getUpdatedAt() {
+		return updatedAt;
+	}
+
+	@JsonIgnore
+	public void setUpdatedAt(Instant updatedAt) {
+		this.updatedAt = updatedAt;
 	}
 }

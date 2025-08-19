@@ -12,7 +12,7 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserProfile {
-	private Long id;
+	private String id;
 	private String username;
 	private String firstName;
 	private String lastName;

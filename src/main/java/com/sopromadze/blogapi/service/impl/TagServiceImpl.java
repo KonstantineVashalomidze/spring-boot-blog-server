@@ -10,6 +10,7 @@ import com.sopromadze.blogapi.repository.TagRepository;
 import com.sopromadze.blogapi.security.UserPrincipal;
 import com.sopromadze.blogapi.service.TagService;
 import com.sopromadze.blogapi.utils.AppUtils;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,9 +24,11 @@ import java.util.List;
 
 @Service
 public class TagServiceImpl implements TagService {
+	private final TagRepository tagRepository;
 
-	@Autowired
-	private TagRepository tagRepository;
+	public TagServiceImpl(TagRepository tagRepository) {
+		this.tagRepository = tagRepository;
+	}
 
 	@Override
 	public PagedResponse<Tag> getAllTags(int page, int size) {
@@ -41,7 +44,7 @@ public class TagServiceImpl implements TagService {
 	}
 
 	@Override
-	public Tag getTag(Long id) {
+	public Tag getTag(ObjectId id) {
 		return tagRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tag", "id", id));
 	}
 
@@ -51,7 +54,7 @@ public class TagServiceImpl implements TagService {
 	}
 
 	@Override
-	public Tag updateTag(Long id, Tag newTag, UserPrincipal currentUser) {
+	public Tag updateTag(ObjectId id, Tag newTag, UserPrincipal currentUser) {
 		Tag tag = tagRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tag", "id", id));
 		if (tag.getCreatedBy().equals(currentUser.getId()) || currentUser.getAuthorities()
 				.contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {
@@ -64,7 +67,7 @@ public class TagServiceImpl implements TagService {
 	}
 
 	@Override
-	public ApiResponse deleteTag(Long id, UserPrincipal currentUser) {
+	public ApiResponse deleteTag(ObjectId id, UserPrincipal currentUser) {
 		Tag tag = tagRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tag", "id", id));
 		if (tag.getCreatedBy().equals(currentUser.getId()) || currentUser.getAuthorities()
 				.contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {

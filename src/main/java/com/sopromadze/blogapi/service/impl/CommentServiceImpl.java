@@ -15,6 +15,7 @@ import com.sopromadze.blogapi.repository.UserRepository;
 import com.sopromadze.blogapi.security.UserPrincipal;
 import com.sopromadze.blogapi.service.CommentService;
 import com.sopromadze.blogapi.utils.AppUtils;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,67 +37,70 @@ public class CommentServiceImpl implements CommentService {
 
 	private static final String POST_STR = "Post";
 
-	private static final String COMMENT_DOES_NOT_BELONG_TO_POST = "Comment does not belong to post";
+	private static final String COMMENT_DOES_NOT_BEObjectId_TO_POST = "Comment does not beObjectId to post";
 
-	@Autowired
-	private CommentRepository commentRepository;
+	private final CommentRepository commentRepository;
 
-	@Autowired
-	private PostRepository postRepository;
+	private final PostRepository postRepository;
 
-	@Autowired
-	private UserRepository userRepository;
+	private final UserRepository userRepository;
+
+	public CommentServiceImpl(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository) {
+		this.commentRepository = commentRepository;
+		this.postRepository = postRepository;
+		this.userRepository = userRepository;
+	}
 
 	@Override
-	public PagedResponse<Comment> getAllComments(Long postId, int page, int size) {
+	public PagedResponse<Comment> getAllComments(ObjectId postId, int page, int size) {
 		AppUtils.validatePageNumberAndSize(page, size);
 		Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, "createdAt");
 
-		Page<Comment> comments = commentRepository.findByPostId(postId, pageable);
+		Page<Comment> comments = commentRepository.findByPost(postId, pageable);
 
 		return new PagedResponse<>(comments.getContent(), comments.getNumber(), comments.getSize(),
 				comments.getTotalElements(), comments.getTotalPages(), comments.isLast());
 	}
 
 	@Override
-	public Comment addComment(CommentRequest commentRequest, Long postId, UserPrincipal currentUser) {
+	public Comment addComment(CommentRequest commentRequest, ObjectId postId, UserPrincipal currentUser) {
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new ResourceNotFoundException(POST_STR, ID_STR, postId));
 		User user = userRepository.getUser(currentUser);
 		Comment comment = new Comment(commentRequest.getBody());
-		comment.setUser(user);
-		comment.setPost(post);
+		comment.setUser(user.getId());
+		comment.setPost(post.getId());
 		comment.setName(currentUser.getUsername());
 		comment.setEmail(currentUser.getEmail());
 		return commentRepository.save(comment);
 	}
 
 	@Override
-	public Comment getComment(Long postId, Long id) {
+	public Comment getComment(ObjectId postId, ObjectId id) {
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new ResourceNotFoundException(POST_STR, ID_STR, postId));
 		Comment comment = commentRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException(COMMENT_STR, ID_STR, id));
-		if (comment.getPost().getId().equals(post.getId())) {
+		if (comment.getPost().equals(post.getId())) {
 			return comment;
 		}
 
-		throw new BlogapiException(HttpStatus.BAD_REQUEST, COMMENT_DOES_NOT_BELONG_TO_POST);
+		throw new BlogapiException(HttpStatus.BAD_REQUEST, COMMENT_DOES_NOT_BEObjectId_TO_POST);
 	}
 
 	@Override
-	public Comment updateComment(Long postId, Long id, CommentRequest commentRequest,
+	public Comment updateComment(ObjectId postId, ObjectId id, CommentRequest commentRequest,
 			UserPrincipal currentUser) {
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new ResourceNotFoundException(POST_STR, ID_STR, postId));
 		Comment comment = commentRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException(COMMENT_STR, ID_STR, id));
 
-		if (!comment.getPost().getId().equals(post.getId())) {
-			throw new BlogapiException(HttpStatus.BAD_REQUEST, COMMENT_DOES_NOT_BELONG_TO_POST);
+		if (!comment.getPost().equals(post.getId())) {
+			throw new BlogapiException(HttpStatus.BAD_REQUEST, COMMENT_DOES_NOT_BEObjectId_TO_POST);
 		}
 
-		if (comment.getUser().getId().equals(currentUser.getId())
+		if (comment.getUser().equals(currentUser.getId())
 				|| currentUser.getAuthorities().contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {
 			comment.setBody(commentRequest.getBody());
 			return commentRepository.save(comment);
@@ -106,17 +110,17 @@ public class CommentServiceImpl implements CommentService {
 	}
 
 	@Override
-	public ApiResponse deleteComment(Long postId, Long id, UserPrincipal currentUser) {
+	public ApiResponse deleteComment(ObjectId postId, ObjectId id, UserPrincipal currentUser) {
 		Post post = postRepository.findById(postId)
 				.orElseThrow(() -> new ResourceNotFoundException(POST_STR, ID_STR, postId));
 		Comment comment = commentRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException(COMMENT_STR, ID_STR, id));
 
-		if (!comment.getPost().getId().equals(post.getId())) {
-			return new ApiResponse(Boolean.FALSE, COMMENT_DOES_NOT_BELONG_TO_POST);
+		if (!comment.getPost().equals(post.getId())) {
+			return new ApiResponse(Boolean.FALSE, COMMENT_DOES_NOT_BEObjectId_TO_POST);
 		}
 
-		if (comment.getUser().getId().equals(currentUser.getId())
+		if (comment.getUser().equals(currentUser.getId())
 				|| currentUser.getAuthorities().contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {
 			commentRepository.deleteById(comment.getId());
 			return new ApiResponse(Boolean.TRUE, "You successfully deleted comment");

@@ -10,6 +10,7 @@ import com.sopromadze.blogapi.repository.CategoryRepository;
 import com.sopromadze.blogapi.security.UserPrincipal;
 import com.sopromadze.blogapi.service.CategoryService;
 import com.sopromadze.blogapi.utils.AppUtils;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,8 +27,11 @@ import java.util.List;
 @Service
 public class CategoryServiceImpl implements CategoryService {
 
-	@Autowired
-	private CategoryRepository categoryRepository;
+	private final CategoryRepository categoryRepository;
+
+	public CategoryServiceImpl(CategoryRepository categoryRepository) {
+		this.categoryRepository = categoryRepository;
+	}
 
 	@Override
 	public PagedResponse<Category> getAllCategories(int page, int size) {
@@ -44,7 +48,7 @@ public class CategoryServiceImpl implements CategoryService {
 	}
 
 	@Override
-	public ResponseEntity<Category> getCategory(Long id) {
+	public ResponseEntity<Category> getCategory(ObjectId id) {
 		Category category = categoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category", "id", id));
 		return new ResponseEntity<>(category, HttpStatus.OK);
 	}
@@ -56,7 +60,7 @@ public class CategoryServiceImpl implements CategoryService {
 	}
 
 	@Override
-	public ResponseEntity<Category> updateCategory(Long id, Category newCategory, UserPrincipal currentUser) {
+	public ResponseEntity<Category> updateCategory(ObjectId id, Category newCategory, UserPrincipal currentUser) {
 		Category category = categoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Category", "id", id));
 		if (category.getCreatedBy().equals(currentUser.getId()) || currentUser.getAuthorities()
 				.contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {
@@ -69,7 +73,7 @@ public class CategoryServiceImpl implements CategoryService {
 	}
 
 	@Override
-	public ResponseEntity<ApiResponse> deleteCategory(Long id, UserPrincipal currentUser) {
+	public ResponseEntity<ApiResponse> deleteCategory(ObjectId id, UserPrincipal currentUser) {
 		Category category = categoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("category", "id", id));
 		if (category.getCreatedBy().equals(currentUser.getId()) || currentUser.getAuthorities()
 				.contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {

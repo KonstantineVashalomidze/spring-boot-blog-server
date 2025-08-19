@@ -13,7 +13,8 @@ import com.sopromadze.blogapi.service.AlbumService;
 import com.sopromadze.blogapi.service.PhotoService;
 import com.sopromadze.blogapi.utils.AppConstants;
 import com.sopromadze.blogapi.utils.AppUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,16 +29,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
-
 @RestController
 @RequestMapping("/api/albums")
 public class AlbumController {
-	@Autowired
-	private AlbumService albumService;
+	private final AlbumService albumService;
+	private final PhotoService photoService;
 
-	@Autowired
-	private PhotoService photoService;
+	public AlbumController(AlbumService albumService, PhotoService photoService) {
+		this.albumService = albumService;
+		this.photoService = photoService;
+	}
 
 	@ExceptionHandler(ResponseEntityErrorException.class)
 	public ResponseEntity<ApiResponse> handleExceptions(ResponseEntityErrorException exception) {
@@ -60,29 +61,29 @@ public class AlbumController {
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<Album> getAlbum(@PathVariable(name = "id") Long id) {
-		return albumService.getAlbum(id);
+	public ResponseEntity<Album> getAlbum(@PathVariable(name = "id") String id) {
+		return albumService.getAlbum(new ObjectId(id));
 	}
 
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-	public ResponseEntity<AlbumResponse> updateAlbum(@PathVariable(name = "id") Long id, @Valid @RequestBody AlbumRequest newAlbum,
+	public ResponseEntity<AlbumResponse> updateAlbum(@PathVariable(name = "id") String id, @Valid @RequestBody AlbumRequest newAlbum,
 			@CurrentUser UserPrincipal currentUser) {
-		return albumService.updateAlbum(id, newAlbum, currentUser);
+		return albumService.updateAlbum(new ObjectId(id), newAlbum, currentUser);
 	}
 
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-	public ResponseEntity<ApiResponse> deleteAlbum(@PathVariable(name = "id") Long id, @CurrentUser UserPrincipal currentUser) {
-		return albumService.deleteAlbum(id, currentUser);
+	public ResponseEntity<ApiResponse> deleteAlbum(@PathVariable(name = "id") String id, @CurrentUser UserPrincipal currentUser) {
+		return albumService.deleteAlbum(new ObjectId(id), currentUser);
 	}
 
 	@GetMapping("/{id}/photos")
-	public ResponseEntity<PagedResponse<PhotoResponse>> getAllPhotosByAlbum(@PathVariable(name = "id") Long id,
+	public ResponseEntity<PagedResponse<PhotoResponse>> getAllPhotosByAlbum(@PathVariable(name = "id") String id,
 			@RequestParam(name = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
 			@RequestParam(name = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size) {
 
-		PagedResponse<PhotoResponse> response = photoService.getAllPhotosByAlbum(id, page, size);
+		PagedResponse<PhotoResponse> response = photoService.getAllPhotosByAlbum(new ObjectId(id), page, size);
 
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}

@@ -4,18 +4,21 @@ import com.sopromadze.blogapi.model.user.User;
 import com.sopromadze.blogapi.repository.UserRepository;
 import com.sopromadze.blogapi.security.UserPrincipal;
 import com.sopromadze.blogapi.service.CustomUserDetailsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.bson.types.ObjectId;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CustomUserDetailsServiceImpl implements UserDetailsService, CustomUserDetailsService {
-	@Autowired
-	private UserRepository userRepository;
+	private final UserRepository userRepository;
+
+
+	public CustomUserDetailsServiceImpl(UserRepository userRepository) {
+		this.userRepository = userRepository;
+	}
 
 	@Override
 	@Transactional
@@ -27,7 +30,7 @@ public class CustomUserDetailsServiceImpl implements UserDetailsService, CustomU
 
 	@Override
 	@Transactional
-	public UserDetails loadUserById(Long id) {
+	public UserDetails loadUserById(ObjectId id) {
 		User user = userRepository.findById(id).orElseThrow(() -> new UsernameNotFoundException(String.format("User not found with id: %s", id)));
 
 		return UserPrincipal.create(user);

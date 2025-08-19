@@ -7,6 +7,8 @@ import com.sopromadze.blogapi.security.CurrentUser;
 import com.sopromadze.blogapi.security.UserPrincipal;
 import com.sopromadze.blogapi.service.TagService;
 import com.sopromadze.blogapi.utils.AppConstants;
+import jakarta.validation.Valid;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,13 +23,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
-
 @RestController
 @RequestMapping("/api/tags")
 public class TagController {
-	@Autowired
-	private TagService tagService;
+	private final TagService tagService;
+
+	public TagController(TagService tagService) {
+		this.tagService = tagService;
+	}
 
 	@GetMapping
 	public ResponseEntity<PagedResponse<Tag>> getAllTags(
@@ -48,25 +51,25 @@ public class TagController {
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<Tag> getTag(@PathVariable(name = "id") Long id) {
-		Tag tag = tagService.getTag(id);
+	public ResponseEntity<Tag> getTag(@PathVariable(name = "id") String id) {
+		Tag tag = tagService.getTag(new ObjectId(id));
 
 		return new ResponseEntity< >(tag, HttpStatus.OK);
 	}
 
 	@PutMapping("/{id}")
 	@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-	public ResponseEntity<Tag> updateTag(@PathVariable(name = "id") Long id, @Valid @RequestBody Tag tag, @CurrentUser UserPrincipal currentUser) {
+	public ResponseEntity<Tag> updateTag(@PathVariable(name = "id") String id, @Valid @RequestBody Tag tag, @CurrentUser UserPrincipal currentUser) {
 
-		Tag updatedTag = tagService.updateTag(id, tag, currentUser);
+		Tag updatedTag = tagService.updateTag(new ObjectId(id), tag, currentUser);
 
 		return new ResponseEntity< >(updatedTag, HttpStatus.OK);
 	}
 
 	@DeleteMapping("/{id}")
 	@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-	public ResponseEntity<ApiResponse> deleteTag(@PathVariable(name = "id") Long id, @CurrentUser UserPrincipal currentUser) {
-		ApiResponse apiResponse = tagService.deleteTag(id, currentUser);
+	public ResponseEntity<ApiResponse> deleteTag(@PathVariable(name = "id") String id, @CurrentUser UserPrincipal currentUser) {
+		ApiResponse apiResponse = tagService.deleteTag(new ObjectId(id), currentUser);
 
 		return new ResponseEntity< >(apiResponse, HttpStatus.OK);
 	}

@@ -1,52 +1,47 @@
 package com.sopromadze.blogapi.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.sopromadze.blogapi.model.audit.UserDateAudit;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.*;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-import javax.validation.constraints.NotBlank;
+import java.time.Instant;
 
-@EqualsAndHashCode(callSuper = true)
-@Entity
+@EqualsAndHashCode
 @Data
 @NoArgsConstructor
-@Table(name = "photos", uniqueConstraints = { @UniqueConstraint(columnNames = { "title" }) })
-public class Photo extends UserDateAudit {
-	private static final long serialVersionUID = 1L;
-
+@Document("photos")
+public class Photo {
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	private ObjectId id;
 
 	@NotBlank
-	@Column(name = "title")
 	private String title;
 
+	@CreatedDate
+	private Instant createdAt;
+	@LastModifiedDate
+	private Instant updatedAt;
+
+	@CreatedBy
+	private ObjectId createdBy;
+
+	@LastModifiedBy
+	private ObjectId updatedBy;
+
 	@NotBlank
-	@Column(name = "url")
 	private String url;
 
 	@NotBlank
-	@Column(name = "thumbnail_url")
 	private String thumbnailUrl;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "album_id")
-	private Album album;
+	private ObjectId album;
 
-	public Photo(@NotBlank String title, @NotBlank String url, @NotBlank String thumbnailUrl, Album album) {
+	public Photo(@NotBlank String title, @NotBlank String url, @NotBlank String thumbnailUrl, ObjectId album) {
 		this.title = title;
 		this.url = url;
 		this.thumbnailUrl = thumbnailUrl;
@@ -54,7 +49,54 @@ public class Photo extends UserDateAudit {
 	}
 
 	@JsonIgnore
-	public Album getAlbum() {
+	public ObjectId getAlbum() {
 		return album;
 	}
+
+	@JsonIgnore
+	public ObjectId getId() {
+		return id;
+	}
+
+
+	@JsonIgnore
+	public ObjectId getCreatedBy() {
+		return createdBy;
+	}
+
+	@JsonIgnore
+	public void setCreatedBy(ObjectId createdBy) {
+		this.createdBy = createdBy;
+	}
+
+	@JsonIgnore
+	public ObjectId getUpdatedBy() {
+		return updatedBy;
+	}
+
+	@JsonIgnore
+	public void setUpdatedBy(ObjectId updatedBy) {
+		this.updatedBy = updatedBy;
+	}
+
+	@JsonIgnore
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	@JsonIgnore
+	public void setCreatedAt(Instant createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	@JsonIgnore
+	public Instant getUpdatedAt() {
+		return updatedAt;
+	}
+
+	@JsonIgnore
+	public void setUpdatedAt(Instant updatedAt) {
+		this.updatedAt = updatedAt;
+	}
 }
+

@@ -1,52 +1,44 @@
 package com.sopromadze.blogapi.model.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.sopromadze.blogapi.model.audit.UserDateAudit;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.*;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
 import java.time.Instant;
 
-@EqualsAndHashCode(callSuper = true)
-@Entity
+@EqualsAndHashCode
 @Data
 @NoArgsConstructor
-@Table(name = "address")
-public class Address extends UserDateAudit {
-	private static final long serialVersionUID = 1L;
+@Document("addresses")
+public class Address {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	private ObjectId id;
 
-	@Column(name = "street")
+	@CreatedBy
+	private ObjectId createdBy;
+	@LastModifiedBy
+	private ObjectId updatedBy;
+
+	@CreatedDate
+	private Instant createdAt;
+	@LastModifiedDate
+	private Instant updatedAt;
+
 	private String street;
 
-	@Column(name = "suite")
 	private String suite;
 
-	@Column(name = "city")
 	private String city;
 
-	@Column(name = "zipcode")
 	private String zipcode;
 
-	@OneToOne(cascade = CascadeType.ALL)
-	@JoinColumn(name = "geo_id")
 	private Geo geo;
 
-	@OneToOne(mappedBy = "address")
 	private User user;
 
 	public Address(String street, String suite, String city, String zipcode, Geo geo) {
@@ -58,55 +50,47 @@ public class Address extends UserDateAudit {
 	}
 
 	@JsonIgnore
-	public Long getId() {
+	public ObjectId getId() {
 		return id;
 	}
 
 	@JsonIgnore
-	@Override
-	public Long getCreatedBy() {
-		return super.getCreatedBy();
+	public ObjectId getCreatedBy() {
+		return createdBy;
 	}
 
 	@JsonIgnore
-	@Override
-	public void setCreatedBy(Long createdBy) {
-		super.setCreatedBy(createdBy);
+	public void setCreatedBy(ObjectId createdBy) {
+		this.createdBy = createdBy;
 	}
 
 	@JsonIgnore
-	@Override
-	public Long getUpdatedBy() {
-		return super.getUpdatedBy();
+	public ObjectId getUpdatedBy() {
+		return updatedBy;
 	}
 
 	@JsonIgnore
-	@Override
-	public void setUpdatedBy(Long updatedBy) {
-		super.setUpdatedBy(updatedBy);
+	public void setUpdatedBy(ObjectId updatedBy) {
+		this.updatedBy = updatedBy;
 	}
 
 	@JsonIgnore
-	@Override
 	public Instant getCreatedAt() {
-		return super.getCreatedAt();
+		return createdAt;
 	}
 
 	@JsonIgnore
-	@Override
 	public void setCreatedAt(Instant createdAt) {
-		super.setCreatedAt(createdAt);
+		this.createdAt = createdAt;
 	}
 
 	@JsonIgnore
-	@Override
 	public Instant getUpdatedAt() {
-		return super.getUpdatedAt();
+		return updatedAt;
 	}
 
 	@JsonIgnore
-	@Override
 	public void setUpdatedAt(Instant updatedAt) {
-		super.setUpdatedAt(updatedAt);
+		this.updatedAt = updatedAt;
 	}
 }

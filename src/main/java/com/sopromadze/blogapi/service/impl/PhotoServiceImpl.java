@@ -15,6 +15,7 @@ import com.sopromadze.blogapi.security.UserPrincipal;
 import com.sopromadze.blogapi.service.PhotoService;
 import com.sopromadze.blogapi.utils.AppConstants;
 import com.sopromadze.blogapi.utils.AppUtils;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,11 +36,14 @@ import static com.sopromadze.blogapi.utils.AppConstants.PHOTO;
 @Service
 public class PhotoServiceImpl implements PhotoService {
 
-	@Autowired
-	private PhotoRepository photoRepository;
+	private final PhotoRepository photoRepository;
 
-	@Autowired
-	private AlbumRepository albumRepository;
+	private final AlbumRepository albumRepository;
+
+	public PhotoServiceImpl(PhotoRepository photoRepository, AlbumRepository albumRepository) {
+		this.photoRepository = photoRepository;
+		this.albumRepository = albumRepository;
+	}
 
 	@Override
 	public PagedResponse<PhotoResponse> getAllPhotos(int page, int size) {
@@ -50,8 +54,8 @@ public class PhotoServiceImpl implements PhotoService {
 
 		List<PhotoResponse> photoResponses = new ArrayList<>(photos.getContent().size());
 		for (Photo photo : photos.getContent()) {
-			photoResponses.add(new PhotoResponse(photo.getId(), photo.getTitle(), photo.getUrl(),
-					photo.getThumbnailUrl(), photo.getAlbum().getId()));
+			photoResponses.add(new PhotoResponse(photo.getId().toString(), photo.getTitle(), photo.getUrl(),
+					photo.getThumbnailUrl(), photo.getAlbum().toString()));
 		}
 
 		if (photos.getNumberOfElements() == 0) {
@@ -64,26 +68,29 @@ public class PhotoServiceImpl implements PhotoService {
 	}
 
 	@Override
-	public PhotoResponse getPhoto(Long id) {
+	public PhotoResponse getPhoto(ObjectId id) {
 		Photo photo = photoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(PHOTO, ID, id));
 
-		return new PhotoResponse(photo.getId(), photo.getTitle(), photo.getUrl(),
-				photo.getThumbnailUrl(), photo.getAlbum().getId());
+		return new PhotoResponse(photo.getId().toString(), photo.getTitle(), photo.getUrl(),
+				photo.getThumbnailUrl(), photo.getAlbum().toString());
 	}
 
 	@Override
-	public PhotoResponse updatePhoto(Long id, PhotoRequest photoRequest, UserPrincipal currentUser) {
-		Album album = albumRepository.findById(photoRequest.getAlbumId())
+	public PhotoResponse updatePhoto(ObjectId id, PhotoRequest photoRequest, UserPrincipal currentUser) {
+		Album album = albumRepository.findById(new ObjectId(photoRequest.getAlbumId()))
 				.orElseThrow(() -> new ResourceNotFoundException(ALBUM, ID, photoRequest.getAlbumId()));
 		Photo photo = photoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(PHOTO, ID, id));
-		if (photo.getAlbum().getUser().getId().equals(currentUser.getId())
+		Album photoAlbum = albumRepository.findById(photo.getAlbum())
+				.orElseThrow(() -> new ResourceNotFoundException(ALBUM, ID, photo.getAlbum()));
+
+		if (photoAlbum.getUser().equals(currentUser.getId())
 				|| currentUser.getAuthorities().contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {
 			photo.setTitle(photoRequest.getTitle());
 			photo.setThumbnailUrl(photoRequest.getThumbnailUrl());
-			photo.setAlbum(album);
+			photo.setAlbum(album.getId());
 			Photo updatedPhoto = photoRepository.save(photo);
-			return new PhotoResponse(updatedPhoto.getId(), updatedPhoto.getTitle(),
-					updatedPhoto.getUrl(), updatedPhoto.getThumbnailUrl(), updatedPhoto.getAlbum().getId());
+			return new PhotoResponse(updatedPhoto.getId().toString(), updatedPhoto.getTitle(),
+					updatedPhoto.getUrl(), updatedPhoto.getThumbnailUrl(), updatedPhoto.getAlbum().toString());
 		}
 
 		ApiResponse apiResponse = new ApiResponse(Boolean.FALSE, "You don't have permission to update this photo");
@@ -93,14 +100,15 @@ public class PhotoServiceImpl implements PhotoService {
 
 	@Override
 	public PhotoResponse addPhoto(PhotoRequest photoRequest, UserPrincipal currentUser) {
-		Album album = albumRepository.findById(photoRequest.getAlbumId())
+		Album album = albumRepository.findById(new ObjectId(photoRequest.getAlbumId()))
 				.orElseThrow(() -> new ResourceNotFoundException(ALBUM, ID, photoRequest.getAlbumId()));
-		if (album.getUser().getId().equals(currentUser.getId())) {
+
+		if (album.getUser().equals(currentUser.getId())) {
 			Photo photo = new Photo(photoRequest.getTitle(), photoRequest.getUrl(), photoRequest.getThumbnailUrl(),
-					album);
+					album.getId());
 			Photo newPhoto = photoRepository.save(photo);
-			return new PhotoResponse(newPhoto.getId(), newPhoto.getTitle(), newPhoto.getUrl(),
-					newPhoto.getThumbnailUrl(), newPhoto.getAlbum().getId());
+			return new PhotoResponse(newPhoto.getId().toString(), newPhoto.getTitle(), newPhoto.getUrl(),
+					newPhoto.getThumbnailUrl(), newPhoto.getAlbum().toString());
 		}
 
 		ApiResponse apiResponse = new ApiResponse(Boolean.FALSE, "You don't have permission to add photo in this album");
@@ -109,9 +117,12 @@ public class PhotoServiceImpl implements PhotoService {
 	}
 
 	@Override
-	public ApiResponse deletePhoto(Long id, UserPrincipal currentUser) {
+	public ApiResponse deletePhoto(ObjectId id, UserPrincipal currentUser) {
 		Photo photo = photoRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(PHOTO, ID, id));
-		if (photo.getAlbum().getUser().getId().equals(currentUser.getId())
+		Album photoAlbum = albumRepository.findById(photo.getAlbum())
+				.orElseThrow(() -> new ResourceNotFoundException(ALBUM, ID, photo.getAlbum()));
+
+		if (photoAlbum.getUser().equals(currentUser.getId())
 				|| currentUser.getAuthorities().contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {
 			photoRepository.deleteById(id);
 			return new ApiResponse(Boolean.TRUE, "Photo deleted successfully");
@@ -123,17 +134,17 @@ public class PhotoServiceImpl implements PhotoService {
 	}
 
 	@Override
-	public PagedResponse<PhotoResponse> getAllPhotosByAlbum(Long albumId, int page, int size) {
+	public PagedResponse<PhotoResponse> getAllPhotosByAlbum(ObjectId albumId, int page, int size) {
 		AppUtils.validatePageNumberAndSize(page, size);
 
 		Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, AppConstants.CREATED_AT);
 
-		Page<Photo> photos = photoRepository.findByAlbumId(albumId, pageable);
+		Page<Photo> photos = photoRepository.findByAlbum(albumId, pageable);
 
 		List<PhotoResponse> photoResponses = new ArrayList<>(photos.getContent().size());
 		for (Photo photo : photos.getContent()) {
-			photoResponses.add(new PhotoResponse(photo.getId(), photo.getTitle(), photo.getUrl(),
-					photo.getThumbnailUrl(), photo.getAlbum().getId()));
+			photoResponses.add(new PhotoResponse(photo.getId().toString(), photo.getTitle(), photo.getUrl(),
+					photo.getThumbnailUrl(), photo.getAlbum().toString()));
 		}
 
 		return new PagedResponse<>(photoResponses, photos.getNumber(), photos.getSize(), photos.getTotalElements(),

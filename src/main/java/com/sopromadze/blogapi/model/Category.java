@@ -1,58 +1,84 @@
 package com.sopromadze.blogapi.model;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.sopromadze.blogapi.model.audit.UserDateAudit;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.*;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.time.Instant;
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
-@Entity
+@EqualsAndHashCode
 @Data
 @NoArgsConstructor
-@Table(name = "categories")
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-public class Category extends UserDateAudit {
-	private static final long serialVersionUID = 1L;
+@Document("categories")
+public class Category {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+	private ObjectId id;
 
-	@Column(name = "name")
 	private String name;
 
-	@OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
-	private List<Post> posts;
+	private List<ObjectId> posts;
+
+	@CreatedDate
+	private Instant createdAt;
+	@LastModifiedDate
+	private Instant updatedAt;
+
+	@CreatedBy
+	private ObjectId createdBy;
+
+	@LastModifiedBy
+	private ObjectId updatedBy;
 
 	public Category(String name) {
 		super();
 		this.name = name;
 	}
 
-	public List<Post> getPosts() {
-		return this.posts == null ? null : new ArrayList<>(this.posts);
+
+	@JsonIgnore
+	public ObjectId getCreatedBy() {
+		return createdBy;
 	}
 
-	public void setPosts(List<Post> posts) {
-		if (posts == null) {
-			this.posts = null;
-		} else {
-			this.posts = Collections.unmodifiableList(posts);
-		}
+	@JsonIgnore
+	public void setCreatedBy(ObjectId createdBy) {
+		this.createdBy = createdBy;
+	}
+
+	@JsonIgnore
+	public ObjectId getUpdatedBy() {
+		return updatedBy;
+	}
+
+	@JsonIgnore
+	public void setUpdatedBy(ObjectId updatedBy) {
+		this.updatedBy = updatedBy;
+	}
+
+	@JsonIgnore
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	@JsonIgnore
+	public void setCreatedAt(Instant createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	@JsonIgnore
+	public Instant getUpdatedAt() {
+		return updatedAt;
+	}
+
+	@JsonIgnore
+	public void setUpdatedAt(Instant updatedAt) {
+		this.updatedAt = updatedAt;
 	}
 
 }
